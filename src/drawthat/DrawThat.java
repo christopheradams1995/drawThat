@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-public class DrawThat extends JComponent implements Runnable, MouseListener
+public class DrawThat extends JComponent implements MouseListener
 {
     public static JFrame frame = new JFrame("Draw That!");
     public static Point point = new Point(0,0);
@@ -36,11 +36,9 @@ public class DrawThat extends JComponent implements Runnable, MouseListener
         frame.setSize(810,630);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        frame.setContentPane(mm); // Loads up the mainMenu class 
         frame.setBackground(Color.white);
+        frame.setContentPane(mm); // Loads up the mainMenu class 
         
-        //Load Images
-        //back = getImage("images/space1_0.png");
         this.addMouseListener(this);
         
         
@@ -51,11 +49,6 @@ public class DrawThat extends JComponent implements Runnable, MouseListener
         
         DrawThat frame = new DrawThat();// main frame and starts with the mainMenu
 
-    }
-    
-    public void run()
-    {
-        
     }
     
 
