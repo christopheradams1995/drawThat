@@ -36,7 +36,7 @@ public class DrawThat extends JComponent implements Runnable, MouseListener
         frame.setSize(810,630);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
-        frame.setContentPane(mm);
+        frame.setContentPane(mm); // Loads up the mainMenu class 
         frame.setBackground(Color.white);
         
         //Load Images
