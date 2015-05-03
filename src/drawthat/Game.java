@@ -25,9 +25,14 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileWriter;
 import java.net.InetAddress;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
@@ -63,6 +68,10 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     private Point p;
     private String ip = "";
     private String port = "";
+    
+    //Gets the date for the log file
+    static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+    static Date date = new Date();
 
     private static DTClient client;
     boolean sendmessage = false;
@@ -119,17 +128,17 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         //chatTF.
         
         //Set up scrollable text area
-        chatTA.setBounds(589, 20, 195, 395);
+        chatTA.setBounds(589, 20, 195, 425);
         chatTA.setEditable(false);
         caret = (DefaultCaret) chatTA.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         scroll = new JScrollPane(chatTA);
-        scroll.setBounds(589, 20, 195, 375);
+        scroll.setBounds(589, 20, 196, 398);
         scroll.setWheelScrollingEnabled(true);
         scroll.setViewportView(chatTA);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         
         refreshChat();
         this.add(scroll);
@@ -144,6 +153,11 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         client.messages.add("Welcome to Draw that! The game is pre-alpha so please be patient and "
                 + "inform the developers of any issues.");
         client.messages.add(" \n \n Also please wait for 2 or more people to join.");
+        try
+        {
+            client.messages.add("\n\n Your IP to share is: " + InetAddress.getLocalHost().getHostAddress());
+        }
+        catch(Exception er){Game.logMessage(er.getMessage());}
         refreshChat();
     }
     
@@ -351,39 +365,43 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     // line is too long. 
     public static void refreshChat()
     {
-        
-        ListIterator it = client.messages.listIterator();
-        String messages = "";
-        while(it.hasNext())
+        try
         {
-            String nit = (String)it.next();
-            outerloop:
-            for(int i=30;i<=nit.length();i += 30)
+            ListIterator it = client.messages.listIterator();
+            String messages = "";
+            while(it.hasNext())
             {
-                char s;
-                int j = i;
-                do
+                String nit = (String)it.next();
+                outerloop:
+                for(int i=30;i<=nit.length();i += 30)
                 {
-                    if(j > 0)
+                    char s;
+                    int j = i;
+                    do
                     {
-                        s = nit.charAt(j);
-                        j--;
+                        if(j > 0)
+                        {
+                            s = nit.charAt(j);
+                            j--;
+                        }
+                        else
+                        {
+                            break outerloop;
+                        }
                     }
-                    else
-                    {
-                        break outerloop;
-                    }
+                    while(s != ' ');
+                    nit = new StringBuilder(nit).insert(j+1, "\n").toString();
                 }
-                while(s != ' ');
-                nit = new StringBuilder(nit).insert(j+1, "\n").toString();
-            }
             
-            chat += nit;
-            it.remove();
+                chat += nit;
+                it.remove();
+            }
+            chatTA.setText(chat);
+            //
+        }catch(Exception er)
+        {
+            Game.logMessage("refreshChat method in class Game/n"+er.getMessage());
         }
-        chatTA.setText(chat);
-        //
-        
     }
     
     /**
@@ -542,6 +560,31 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     public void keyReleased(KeyEvent e) 
     {
         //System.out.println(e.getKeyChar());
+    }
+    
+    public static void logMessage(String er)
+    {
+
+        System.out.println(dateFormat.format(date)); //2014-08-06_15-59-48
+        
+        try
+        {
+            File dir = new File("logs");
+            if(!dir.exists())
+            {
+                dir.mkdir();
+            }
+            File f = new File("logs/log_"+dateFormat.format(date)+".txt");
+            if(!f.exists())
+                f.createNewFile();
+        
+            FileWriter writer = new FileWriter(f, true);
+        
+            writer.write(er+ "\n");
+            writer.flush();
+            writer.close();
+                        
+        }catch(Exception err){}
     }
 
 

@@ -34,12 +34,11 @@ public class DTClient implements Runnable
         try
         {
             // Joins the server
-            
+            System.out.println("Created a server at " + serverName);
             client = new Socket(serverName, port);
             
             OutputStream outToServer = client.getOutputStream();
             out = new DataOutputStream(outToServer);
-            
             
             InputStream inFromServer = client.getInputStream();
             in = 
@@ -50,18 +49,11 @@ public class DTClient implements Runnable
         }
         finally
         {
-            try
-            {
-                //client.close();
-            }catch(Exception er)
-            {
-                
-            }
+            
         }
     }
     
     /**
-     * 
      * @param message: text to be sent to the server in UTF format. In drawThat
      * the standard format has the type of message at the start in brackets then
      * the parameters of the message are seperated by ",". The points , chat and
@@ -224,7 +216,11 @@ public class DTClient implements Runnable
                     
                 }
                 Thread.sleep(5);
-            }catch(Exception er){er.printStackTrace();}
+            }catch(Exception er)
+            {
+                Game.logMessage(er.getMessage());
+                er.printStackTrace();
+            }
         }
     }
 

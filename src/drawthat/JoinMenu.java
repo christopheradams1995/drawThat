@@ -111,24 +111,18 @@ public class JoinMenu extends JComponent implements Runnable,MouseListener, Mous
                     catch(Exception er)
                     {
                         er.printStackTrace();
+                        Game.logMessage(er.getMessage());
                         errorLabel.setText("Error connecting to the server");
-                        try
-                        {
-                            File f = new File("log.txt");
-                            if(!f.exists())
-                                f.createNewFile();
-                            FileWriter writer = new FileWriter(f);
-                            writer.write(er.getMessage());
-                            writer.flush();
-                            writer.close();
-                        
-                        }catch(Exception err){}
                     }
                     isConnecting = false;
                 }
                 Thread.sleep(1000);
             }
-            catch(Exception er){er.printStackTrace();}
+            catch(Exception er)
+            {
+                er.printStackTrace();
+                Game.logMessage(er.getMessage());
+            }
         }
     }
     
@@ -162,7 +156,11 @@ public class JoinMenu extends JComponent implements Runnable,MouseListener, Mous
             this.repaint();
             this.revalidate();
             
-        }catch(Exception er){System.out.println("ERROR");}
+        }catch(Exception er)
+        {
+            System.out.println("ERROR");
+            Game.logMessage(er.getMessage());
+        }
     }
     
     /**
@@ -184,6 +182,7 @@ public class JoinMenu extends JComponent implements Runnable,MouseListener, Mous
         catch(Exception er)
         {
             er.printStackTrace();
+            Game.logMessage(er.getMessage());
             return null;
         }
         

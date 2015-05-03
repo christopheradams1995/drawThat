@@ -200,6 +200,7 @@ public class HostMenu extends JComponent implements MouseListener, MouseMotionLi
                 catch(Exception er)
                 {
                     er.printStackTrace();
+                    Game.logMessage(er.getMessage());
                 }
                 //DrawThat.setDisplay("mainMenu");
             }

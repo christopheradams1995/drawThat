@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-public class DrawThat extends JComponent implements MouseListener
+public class DrawThat extends JComponent implements Runnable, MouseListener
 {
     public static JFrame frame = new JFrame("Draw That!");
     public static Point point = new Point(0,0);
@@ -33,12 +33,15 @@ public class DrawThat extends JComponent implements MouseListener
     public DrawThat()
     {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(810,630);
+        frame.setSize(805,628);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        frame.setContentPane(mm);
         frame.setBackground(Color.white);
-        frame.setContentPane(mm); // Loads up the mainMenu class 
+        frame.setResizable(false);
         
+        //Load Images
+        //back = getImage("images/space1_0.png");
         this.addMouseListener(this);
         
         
@@ -49,6 +52,11 @@ public class DrawThat extends JComponent implements MouseListener
         
         DrawThat frame = new DrawThat();// main frame and starts with the mainMenu
 
+    }
+    
+    public void run()
+    {
+        
     }
     
 
@@ -122,6 +130,7 @@ public class DrawThat extends JComponent implements MouseListener
         catch(Exception er)
         {
             er.printStackTrace();
+            Game.logMessage(er.getMessage());
             return null;
         }
         

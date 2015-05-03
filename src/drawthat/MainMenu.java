@@ -178,6 +178,5 @@ public class MainMenu extends JComponent implements MouseListener, MouseMotionLi
         {
             this.p = null;
         }
-        
     }
 }

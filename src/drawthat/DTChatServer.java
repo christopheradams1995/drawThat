@@ -71,7 +71,7 @@ public class DTChatServer implements Runnable
             //sends the scoreboard over
             //updateScores();
             
-        }catch(Exception er){}
+        }catch(Exception er){Game.logMessage(er.getMessage());}
         //System.out.println("Client has been added to the arrayList");
     }
     
@@ -120,7 +120,11 @@ public class DTChatServer implements Runnable
                     }
                 }
             }
-        }catch(Exception er){er.printStackTrace();}
+        }catch(Exception er)
+        {
+            er.printStackTrace();
+            Game.logMessage(er.getMessage());
+        }
         nextWord = ran.nextInt(words.size());
     }
     
@@ -139,7 +143,10 @@ public class DTChatServer implements Runnable
                 }
             
                 out.flush();
-            }catch(Exception er){er.printStackTrace();}
+            }catch(Exception er)
+            {
+                Game.logMessage(er.getMessage());
+            }
         }
     }
     
@@ -166,7 +173,11 @@ public class DTChatServer implements Runnable
                     out.writeUTF(message);
             
                 out.flush();
-            }catch(Exception er){er.printStackTrace();}
+            }catch(Exception er)
+            {
+                Game.logMessage(er.getMessage());
+                er.printStackTrace();
+            }
         }
     }
     
@@ -273,12 +284,14 @@ public class DTChatServer implements Runnable
             {
                 try
                 {
+                    Game.logMessage(s.getMessage());
                 }catch(Exception er){er.printStackTrace();}
                 //break;
             }
             catch(Exception e)
             {
                 e.printStackTrace();
+                Game.logMessage(e.getMessage());
                 break;
             }
             cur = 0;
