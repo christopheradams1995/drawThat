@@ -1,0 +1,3 @@
+[Ljava.lang.Object; cannot be cast to [Ljava.awt.Point;
+[Ljava.lang.Object; cannot be cast to [Ljava.awt.Point;
+[Ljava.lang.Object; cannot be cast to [Ljava.awt.Point;

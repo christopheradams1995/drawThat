@@ -34,9 +34,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -80,14 +82,24 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     new float[] { 3, 1 }, 0);
 
     public static Point points[] = new Point[20000];
-    public static ArrayList pointsToSend = new ArrayList();
+    public static List<List<Point>> linesToSend = new CopyOnWriteArrayList<List<Point>>();
     static int pointSize = 0;
     public static boolean isReleased = false;
     public static boolean isPressed = false;
     private static Point[] endPoints = new Point[10000];
     private static Color[] colorPoints = new Color[10000];
-    static int endPointsSize = 0;
     private String color = "black";
+    
+    //used to create the drawing to send
+    Point start;
+    public static List<Point> pointsToSend = new CopyOnWriteArrayList<Point>();
+    Point end;
+    
+    //These are the points that are drawn locally
+    public static List<DrawLine> pointsToDraw = new CopyOnWriteArrayList<DrawLine>();
+    
+    //Doesn't send these points across the network , only displays them locally while drawing
+    public static List<Point> pointsToDrawLocally = new CopyOnWriteArrayList<Point>();
     
     static String chat = "";
     
@@ -177,15 +189,6 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         
     }
     
-    public static void addEndPoint(int x , int y)
-    {
-        if(drawingArea.contains(new Point(x,y)))
-        {
-            endPoints[endPointsSize++] = new Point(x,y);
-            
-        }
-    }
-    
     public void paintComponent(Graphics g) 
     {
         super.paintComponent(g);
@@ -197,8 +200,6 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
             if(client.clearGame)
             {
                 points = new Point[20000];
-                endPoints = new Point[10000];
-                endPointsSize = 0;
                 colorPoints = new Color[10000];
                 pointSize = 0;
                 client.clearGame = false;
@@ -208,43 +209,33 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
             g2d.setColor(Color.black);
             g2d.drawRect(0, 109, 573,341);
             g2d.setStroke(stroke);
-            //g2d.drawImage(button, 230, 210, null);
-            //g2d.drawImage(button,25, 480, null);
-            //g2d.drawImage(button, 460, 480, null);
-            //g2d.drawImage(title, 150, 0, null);
-            for(int i=0;i<pointSize;i++)
+            
+            //these points were recieved from the network
+            Iterator<DrawLine> lines = pointsToDraw.iterator();
+            while(lines.hasNext())
             {
-                Point p = points[i];
+                DrawLine line = (DrawLine)lines.next();
+                //g2d.setColor(line.getColor());
+                Point[] points = line.getPoints();
                 
-                if(p != null)
+                for(int i=0;i<points.length;i++)
                 {
-                    //g2d.fillOval(p.x, p.y, 5, 5);
-                    if(i > 0)
+                    if(points[i] != null && points[i+1] != null)
                     {
-                        for(int j=0;j<endPointsSize;j++)
-                        {
-                            if(endPoints[j] != null && points[i] != null)
-                            {
-                                if(endPoints[j].x == points[i].x && endPoints[j].y == points[i].y)
-                                {
-                                
-                                    //g2d.drawRect(endPoints[j].x, endPoints[j].y, 10, 10);
-                                    if(i != pointSize)
-                                        i++;
-                                }
-                                //System.out.println(endPoints[j].x);
-                            }
-                            else
-                            {
-                                continue;
-                            }
-                        }
-                        g2d.setColor(colorPoints[i]);
-                        g2d.drawLine(points[i-1].x, points[i-1].y, p.x, p.y);
-                        
-                        
+                        g2d.drawLine(points[i+1].x, points[i+1].y, points[i].x, points[i].y);
+                        //g2d.drawRect(points[i].x, points[i].y, 4, 4);
                     }
                 }
+                //pointsToDraw.remove(line);
+            }
+            
+            //these are the points that are currently being drawn
+            Point[] pointsLoc = (pointsToDrawLocally.toArray(new Point[pointsToDrawLocally.size()]));
+            for(int i=0;i<pointsLoc.length-1;i++)
+            {
+                Point p = pointsLoc[i];
+                Point p2 = pointsLoc[i+1];
+                g2d.drawLine(p.x, p.y, p2.x, p2.y);
             }
             
             
@@ -306,35 +297,7 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     
     public static void undo()
     {
-        //points[pointSize] = null;
-            outerloop:for(int i=pointSize;i>0;i--)
-            {
-                Point p = points[i];
-                for(int j=endPointsSize-1;j>0;j--)
-                {
-                    if(endPoints[j] != null && points[i] != null)
-                    {
-                        if(endPoints[j].x == points[i].x && endPoints[j].y == points[i].y)
-                        {
-                            System.out.println("END");
-                            pointSize = i;
-                            endPointsSize = j-1;
-                            break outerloop;
-                        }
-                        else
-                        {
-                            System.out.println("Point deleted");
-                            points[i] = null;
-                        }
-                                //System.out.println(endPoints[j].x);
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                
-            }
+
     }
     
 
@@ -345,16 +308,34 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         {
             try
             {
-                ListIterator pts = pointsToSend.listIterator();
-                while(pts.hasNext())
+                Iterator<List<Point>> lts = linesToSend.iterator();
+                while(lts.hasNext())
                 {
-                    Point p = (Point)pts.next();
-                    client.sendMessage("[OP_POINT]" + p.x +","+ p.y + ","+"1" +","+ color);
-                    pts.remove();
+                    List<Point> line = lts.next();
+                    //Iterator<Point> pts = line.iterator();
+                    Object[] points = line.toArray();
+                    Point p = null;
+                    
+                    for(int i=0;i<points.length;i++)
+                    {
+                        p = (Point)points[i];
+                        if(p == null)
+                            System.out.println("NULL AT POINT AT:"+i);
+                        if(i==0)
+                            client.sendMessage("[OP_POINT_FIRST]" + p.x +","+ p.y + ","+"1" +","+ color);
+                        else if(i==points.length-1)
+                        {
+                            System.out.println(p);
+                            client.sendMessage("[OP_POINT_LAST]" + p.x +","+ p.y);
+                            
+                        }
+                        else
+                        {
+                            client.sendMessage("[OP_POINT]" + p.x +","+ p.y);
+                        }
+                    }
+                    linesToSend.remove(line);
                 }
-                
-                
-                
                 
                 Thread.sleep(2);
             }catch(Exception er){er.printStackTrace();}
@@ -447,6 +428,7 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     {
         Point p = e.getPoint();
         
+        
         if(chatSend.contains(p))
         {
             System.out.println("clicked");
@@ -493,42 +475,75 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         {
             //client.sendMessage("[OP_TOOL]" + "restart");
         }
+        
+    }
+    
+    public static void addLineToDraw(DrawLine points)
+    {
+        pointsToDraw.add(points);
+        pointsToDrawLocally.clear();
+    }
+    
+    //Adds a new set of points to send which sits in an array until it's sent as a message
+    public void addLineToSend()
+    {
+        List<Point> pointsToSend = new CopyOnWriteArrayList<>();
+        pointsToSend.add(start);
+        pointsToSend.addAll(this.pointsToSend);
+        pointsToSend.add(end);
+        //pointsToSend.add(this.pointsToSend.get(this.pointsToSend.size()-2));
+        
+        
+        start = null;
+        end = null;
+        linesToSend.add(pointsToSend);
+        //System.out.println("Added Line");
+        pointsToSend = new CopyOnWriteArrayList<>();
+        this.pointsToSend = new CopyOnWriteArrayList<>();
+        
     }
 
     public void mousePressed(MouseEvent e) 
     {
-        isPressed = true;
+        
+        if(start == null)
+        {
+            start = e.getPoint();
+            pointsToDrawLocally.add(e.getPoint());
+        }
+        
     }
 
     public void mouseReleased(MouseEvent e) 
     {
-        //System.out.println("Mouse released");
-        if(client.name.equals(client.turnPlayer))
+        if(true)
         {
-            isReleased = true;
-            Point p = e.getPoint();
-            client.sendMessage("[OP_ENDPOINT]" + p.x +","+ p.y);
+            if(end == null)
+            {
+                end = e.getPoint();
+                pointsToDrawLocally.add(e.getPoint());
+                addLineToSend();
+            }
         }
         //System.out.println("released at " + e.getX() + " " + e.getY());
         
     }
 
-    public void mouseEntered(MouseEvent e) 
-    {
-       
-    }
+    public void mouseEntered(MouseEvent e) {}
 
-    public void mouseExited(MouseEvent e) 
-    {
-        
-    }
+    public void mouseExited(MouseEvent e) {}
 
     public void mouseDragged(MouseEvent e) 
     {
-        if(client.name.equals(client.turnPlayer))
+        //if(client.name.equals(client.turnPlayer))
+        if(true)
         {
             Point p = e.getPoint();
-            pointsToSend.add(p);
+            if(start != null && end == null)
+            {
+                pointsToSend.add(p);
+                pointsToDrawLocally.add(p);
+            }
         }
         
         

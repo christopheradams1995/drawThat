@@ -2,6 +2,7 @@
 package drawthat;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,6 +11,8 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DTClient implements Runnable
 {
@@ -72,8 +75,15 @@ public class DTClient implements Runnable
         }
     }
     
+    Point start;
+    List<Point> pointsToSend = new CopyOnWriteArrayList<>();
+    DrawLine points;
+    Point end;
+    
+    
     public void run()
     {
+        
         while(true)
         {
             try
@@ -92,7 +102,7 @@ public class DTClient implements Runnable
                         messages.add(message.substring(12));
                         Game.refreshChat();
                     }
-                    else if(Op.equals("[OP_POINT]"))//point to paint
+                    else if(Op.equals("[OP_POINT_FIRST]"))//point to paint
                     {
                         String props = message.substring(index+1);
                         String [] split = props.split(",");
@@ -129,8 +139,44 @@ public class DTClient implements Runnable
                                 break;
                                 
                         }
+                        points = new DrawLine(new Point(x,y),color,size);
+                        System.out.println("MADE NEW DRAWLINE");
+                    }
+                    else if(Op.equals("[OP_POINT]"))//point to paint
+                    {
+                        String props = message.substring(index+1);
+                        String [] split = props.split(",");
                         
-                        Game.addPoint(x, y, size, color);
+                        int x = Integer.parseInt(split[0]);
+                        int y = Integer.parseInt(split[1]);
+                        pointsToSend.add(new Point(x,y));
+                        //Game.addPoint(new DrawPoint(new Point(x,y), color, size));
+                        
+                    }
+                    else if(Op.equals("[OP_POINT_LAST]"))//point to paint
+                    {
+                        String props = message.substring(index+1);
+                        String [] split = props.split(",");
+                        
+                        int x = Integer.parseInt(split[0]);
+                        int y = Integer.parseInt(split[1]);
+                        
+                        if(points != null)
+                        {
+                            points.setMid(pointsToSend.toArray(new Point[pointsToSend.size()]));
+                            points.setEnd(new Point(x,y));
+                            //System.out.println(points);
+                            Game.addLineToDraw(points);
+                            start = null;
+                            end = null;
+                            points = null;
+                            pointsToSend = new CopyOnWriteArrayList<>();
+                            //points = null;
+                        }
+                        else
+                        {
+                            System.out.println("NILL POINT LAST");
+                        }
                         
                     }
                     else if(Op.equals("[OP_ID]"))// gives the user ID
@@ -202,6 +248,8 @@ public class DTClient implements Runnable
                             //Game.restart = true;
                         }
                     }
+                    
+                    /*
                     else if(Op.equals("[OP_ENDPOINT]"))//used instead of [OP_Released]
                     {
                         int xindex = message.indexOf(",");
@@ -213,6 +261,7 @@ public class DTClient implements Runnable
                         
                         // (x , y , size , color)
                     }
+                    */
                     
                 }
                 Thread.sleep(5);

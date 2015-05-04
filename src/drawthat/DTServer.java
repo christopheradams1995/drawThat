@@ -70,7 +70,7 @@ public class DTServer implements Runnable
             catch(SocketTimeoutException s)
             {
                 
-                Game.logMessage(s.getMessage());
+                //Game.logMessage(s.getMessage());
             }
             catch(Exception e)
             {
