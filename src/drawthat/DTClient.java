@@ -80,6 +80,36 @@ public class DTClient implements Runnable
     DrawLine points;
     Point end;
     
+    public static Color stringToColor(String colorString)
+    {
+        Color color = Color.black;
+                        
+        switch(colorString)
+        {
+            case "red":
+                color = Color.red;
+                break;
+            case "yellow":
+                color = Color.yellow;
+                break;
+            case "orange":
+                color = Color.orange;
+                break;
+            case "green":
+                color = Color.green;
+                break;
+            case "blue":
+                color = Color.blue;
+                break;
+            case "pink":
+                color = Color.pink;
+                break;
+            case "white":
+                color = Color.white;
+                break;
+        }
+        return color;
+    }
     
     public void run()
     {
@@ -112,35 +142,9 @@ public class DTClient implements Runnable
                         int size = Integer.parseInt(split[2]);
                         String colorString = split[3];
                         
-                        Color color = Color.black;
-                        
-                        switch(colorString)
-                        {
-                            case "red":
-                                color = Color.red;
-                                break;
-                            case "yellow":
-                                color = Color.yellow;
-                                break;
-                            case "orange":
-                                color = Color.orange;
-                                break;
-                            case "green":
-                                color = Color.green;
-                                break;
-                            case "blue":
-                                color = Color.blue;
-                                break;
-                            case "pink":
-                                color = Color.pink;
-                                break;
-                            case "white":
-                                color = Color.white;
-                                break;
-                                
-                        }
+                        Color color = stringToColor(colorString);
                         points = new DrawLine(new Point(x,y),color,size);
-                        System.out.println("MADE NEW DRAWLINE");
+                        System.out.println("[OP_POINT_FIRST] Recieved the first point");
                     }
                     else if(Op.equals("[OP_POINT]"))//point to paint
                     {
@@ -151,10 +155,12 @@ public class DTClient implements Runnable
                         int y = Integer.parseInt(split[1]);
                         pointsToSend.add(new Point(x,y));
                         //Game.addPoint(new DrawPoint(new Point(x,y), color, size));
+                        System.out.println("Made new point");
                         
                     }
                     else if(Op.equals("[OP_POINT_LAST]"))//point to paint
                     {
+                        System.out.println("OP_POINT_LAST Recieved the last point");
                         String props = message.substring(index+1);
                         String [] split = props.split(",");
                         
@@ -163,19 +169,24 @@ public class DTClient implements Runnable
                         
                         if(points != null)
                         {
-                            points.setMid(pointsToSend.toArray(new Point[pointsToSend.size()]));
+                            System.out.println("OP_POINT_LAST points is not null");
                             points.setEnd(new Point(x,y));
+                            points.setMid(pointsToSend.toArray(new Point[pointsToSend.size()]));
+                            
                             //System.out.println(points);
                             Game.addLineToDraw(points);
                             start = null;
                             end = null;
                             points = null;
-                            pointsToSend = new CopyOnWriteArrayList<>();
+                            pointsToSend.clear();
+                            
+                            //Game.logMessage("LINE HAS BEEN ADDED TO THE ARRAY");
                             //points = null;
                         }
                         else
                         {
                             System.out.println("NILL POINT LAST");
+                            Game.logMessage("Found a nill point");
                         }
                         
                     }
@@ -210,6 +221,7 @@ public class DTClient implements Runnable
                                     messages.add("\nCorrect Guess!");
                                     this.sendMessage("[OP_MESSAGE]\n Player: " + this.name + " has guessed the word");
                                     this.sendMessage("[OP_CLEAR]");
+                                    //Game.isRefresh = true;
                                 }
                             }
                         }
@@ -233,7 +245,7 @@ public class DTClient implements Runnable
                         
                         this.wordToGuess = word;
                         this.turnPlayer = name;
-                        
+                        Game.isRefresh = true;
                     }
                     else if(Op.equals("[OP_TOOL]"))
                     {

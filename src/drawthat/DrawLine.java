@@ -62,6 +62,7 @@ public class DrawLine
         }
         mid[0] = start;
         mid[mid.length-1] = end;
+        //System.out.println("start send =" + start);
                 
         
     }

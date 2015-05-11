@@ -35,7 +35,7 @@ public class JoinMenu extends JComponent implements Runnable,MouseListener, Mous
     Font labelFont = new Font("Calibri", Font.PLAIN, 24);
     private static Rectangle recBack= new Rectangle(25,480,316,95)
             ,recNext = new Rectangle(460, 480,316,95);
-    private static JTextField ipTf = new JTextField("25.63.61.160",20);
+    private static JTextField ipTf = new JTextField("192.168.0.15",20);
     private static JTextField nameTf = new JTextField("",20);
     private static JTextField portTf = new JTextField("7777",20);
     private static JLabel ipLabel = new JLabel("Enter the IP Address:");

@@ -39,6 +39,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javafx.scene.shape.Line;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -51,22 +52,29 @@ import javax.swing.text.DefaultCaret;
 public class Game extends JComponent implements Runnable, MouseListener, MouseMotionListener, KeyListener
 {
     // used for the button events including the movement of the arrow
-    private static Rectangle chatSend= new Rectangle(754,415,35,33);
-    private static Rectangle drawingArea = new Rectangle(0, 109, 573,341);
-    private static Rectangle redArea = new Rectangle(10, 484, 64,44);
-    private static Rectangle yellowArea = new Rectangle(74, 473, 67,40);
-    private static Rectangle orangeArea = new Rectangle(146, 464, 66,42);
-    private static Rectangle greenArea = new Rectangle(218, 467, 67,47);
-    private static Rectangle blueArea = new Rectangle(291, 473, 69,47);
-    private static Rectangle pinkArea = new Rectangle(369, 491, 66,47);
-    private static Rectangle blackArea = new Rectangle(452, 517, 64,47);
-    private static Rectangle whiteArea = new Rectangle(15, 547, 45,43);
-    private static Rectangle undoArea = new Rectangle(19, 65, 68,36);
-    private static Rectangle restartArea = new Rectangle(489, 68, 60,32);
+    private static final Rectangle chatSend= new Rectangle(754,415,35,33);
+    private static final Rectangle drawingArea = new Rectangle(0, 109, 573,341);
+    private static final Rectangle redArea = new Rectangle(10, 484, 64,44);
+    private static final Rectangle yellowArea = new Rectangle(74, 473, 67,40);
+    private static final Rectangle orangeArea = new Rectangle(146, 464, 66,42);
+    private static final Rectangle greenArea = new Rectangle(218, 467, 67,47);
+    private static final Rectangle blueArea = new Rectangle(291, 473, 69,47);
+    private static final Rectangle pinkArea = new Rectangle(369, 491, 66,47);
+    private static final Rectangle blackArea = new Rectangle(452, 517, 64,47);
+    private static final Rectangle whiteArea = new Rectangle(15, 547, 45,43);
+    private static final Rectangle undoArea = new Rectangle(19, 65, 68,36);
+    private static final Rectangle restartArea = new Rectangle(14, 61, 80,42);
+    private static final Rectangle brush1Area = new Rectangle(131, 533, 168,9);
+    private static final Rectangle brush2Area = new Rectangle(131, 548, 171,13);
+    private static final Rectangle brush3Area = new Rectangle(132, 565, 169,11);
+    private static final Rectangle brush4Area = new Rectangle(132, 583, 169,11);
+    
+    private static Rectangle shinyColorLoc = new Rectangle(452, 517, 64,47);
+    private static Rectangle shinyBrushLoc = new Rectangle(132, 565, 169,11);
     public static JTextArea chatTA = new JTextArea("",20,20);
     public DefaultCaret caret;
     private JScrollPane scroll;
-    private static JTextField chatTF = new JTextField();
+    private static final JTextField chatTF = new JTextField();
     private Point p;
     private String ip = "";
     private String port = "";
@@ -77,36 +85,47 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
 
     private static DTClient client;
     boolean sendmessage = false;
+    static boolean isRefresh = false;
     
     Stroke stroke = new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0,
     new float[] { 3, 1 }, 0);
 
     public static Point points[] = new Point[20000];
-    public static List<List<Point>> linesToSend = new CopyOnWriteArrayList<List<Point>>();
+    public static List<Point[]> linesToSend = new CopyOnWriteArrayList<>();
     static int pointSize = 0;
+    static int lineSize = 0;
     public static boolean isReleased = false;
     public static boolean isPressed = false;
-    private static Point[] endPoints = new Point[10000];
-    private static Color[] colorPoints = new Color[10000];
+    //
     private String color = "black";
+    private String brushSize = "3";
     
     //used to create the drawing to send
-    Point start;
-    public static List<Point> pointsToSend = new CopyOnWriteArrayList<Point>();
-    Point end;
+    static Point start;
+    public static List<Point> pointsToSend = new CopyOnWriteArrayList<>();
+    static Point end;
+    
+    public static List<Point[]> waitingLines = new CopyOnWriteArrayList<>();
     
     //These are the points that are drawn locally
-    public static List<DrawLine> pointsToDraw = new CopyOnWriteArrayList<DrawLine>();
+    public static List<DrawLine> pointsToDraw = new CopyOnWriteArrayList<>();
+    //public static DrawLine[] pointsToDrawArray = new DrawLine[10000];
+    public static Line[] lines = new Line[10000];
+    public static List<DrawLine> linesToDraw = new CopyOnWriteArrayList<>();
     
     //Doesn't send these points across the network , only displays them locally while drawing
-    public static List<Point> pointsToDrawLocally = new CopyOnWriteArrayList<Point>();
+    public static List<Point> pointsToDrawLocally = new ArrayList<>();
     
     static String chat = "";
     
     BufferedImage back;
     BufferedImage button;
     BufferedImage title;
-    BufferedImage arrow;        
+    BufferedImage arrow;      
+    BufferedImage shinyColor; 
+    BufferedImage shinyErase;
+    BufferedImage shiny; 
+    BufferedImage shinyBrush; 
     
     Game(DTClient client, String name)
     {
@@ -132,12 +151,15 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
 
         //Load Images
         back = getImage("images/gameBack.png");
+        shinyColor = getImage("images/shinyColor.png");
+        shinyErase = getImage("images/shinyErase.png");
+        shinyBrush = getImage("images/shinyBrush.png");
+        shiny = shinyColor;
         //button = getImage("images/MainmenuButton.png");
         //arrow = getImage("images/arrow.png");
         
         //Add text fields and stuff for information input
         chatTF.setBounds(591, 418, 164, 30);
-        //chatTF.
         
         //Set up scrollable text area
         chatTA.setBounds(589, 20, 195, 425);
@@ -162,9 +184,12 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         Thread t = new Thread(this);
         t.start();
         
+        //Adds the welcome message
         client.messages.add("Welcome to Draw that! The game is pre-alpha so please be patient and "
                 + "inform the developers of any issues.");
         client.messages.add(" \n \n Also please wait for 2 or more people to join.");
+        
+        // Gives the host the user to share with friends
         try
         {
             client.messages.add("\n\n Your IP to share is: " + InetAddress.getLocalHost().getHostAddress());
@@ -173,83 +198,80 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         refreshChat();
     }
     
-    
-    public static void addPoint(int x , int y , int size , Color color)
-    {
-        if(drawingArea.contains(new Point(x,y)))
-        {
-            colorPoints[pointSize] = color;
-            points[pointSize++] = new Point(x,y);
-            
-        }
-    }
-    
-    public static void changeName(String newName)
-    {
-        
-    }
-    
     public void paintComponent(Graphics g) 
     {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, // Anti-alias!
         RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        //back2D is the background image and this is what is being drawn on then
+        // it's added to g2d
+        Graphics2D back2D = back.createGraphics();
+        back2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, // Anti-alias!
+        RenderingHints.VALUE_ANTIALIAS_ON);
+        
         try
         {
             if(client.clearGame)
             {
                 points = new Point[20000];
-                colorPoints = new Color[10000];
                 pointSize = 0;
                 client.clearGame = false;
+                //back = getImage("images/gameBack.png");
+                back = getImage("images/gameBack.png");
+                //back2D = back.createGraphics();
             }
             //Draw Images
             g2d.drawImage(back, 0, 0, null);
             g2d.setColor(Color.black);
             g2d.drawRect(0, 109, 573,341);
-            g2d.setStroke(stroke);
+
+            g2d.drawImage(shiny, shinyColorLoc.x-6,shinyColorLoc.y-6, this);
+            g2d.drawImage(shinyBrush, shinyBrushLoc.x,shinyBrushLoc.y, this);
             
-            //these points were recieved from the network
+            //these points were recieved from the network or if it's host , locally
             Iterator<DrawLine> lines = pointsToDraw.iterator();
             while(lines.hasNext())
             {
-                DrawLine line = (DrawLine)lines.next();
-                //g2d.setColor(line.getColor());
+                DrawLine line = lines.next();
+                if(line == null)
+                    continue;
+                back2D.setColor(line.getColor());
+                g2d.setColor(line.getColor());
+                setBrushSize(line.getSize());
                 Point[] points = line.getPoints();
+                back2D.setStroke(stroke);
+                g2d.setStroke(stroke);
                 
-                for(int i=0;i<points.length;i++)
+                for(int j=0;j<points.length;j++)
                 {
-                    if(points[i] != null && points[i+1] != null)
+                    if(j <= points.length-2 && points[j] != null && points[j+1] != null)
                     {
-                        g2d.drawLine(points[i+1].x, points[i+1].y, points[i].x, points[i].y);
-                        //g2d.drawRect(points[i].x, points[i].y, 4, 4);
+                        back2D.drawLine(points[j].x,points[j].y,points[j+1].x,points[j+1].y);
                     }
                 }
-                //pointsToDraw.remove(line);
+                pointsToDraw.remove(line);//once a line has been added to the back bufferedImage it's removed
             }
             
             //these are the points that are currently being drawn
             Point[] pointsLoc = (pointsToDrawLocally.toArray(new Point[pointsToDrawLocally.size()]));
             for(int i=0;i<pointsLoc.length-1;i++)
             {
+                g2d.setColor(DTClient.stringToColor(color));
+                setBrushSize(Integer.parseInt(brushSize));
+                g2d.setStroke(stroke);
                 Point p = pointsLoc[i];
                 Point p2 = pointsLoc[i+1];
                 g2d.drawLine(p.x, p.y, p2.x, p2.y);
             }
             
-            
             Font font = new Font("Calibri", Font.PLAIN, 16);
             Font fontForWord = new Font("Calibri", Font.PLAIN, 32);
             g2d.setFont(font);
             g2d.setColor(Color.blue);
-            
-            
-            //g2d.drawString("Back", 105, 540);
-            //g2d.drawString("Connect", 530, 540);
-            
+
             // The scores for each player
-            
             Set set = client.scores.entrySet();
             Iterator i = set.iterator();
             int x = 596;
@@ -257,12 +279,13 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
             
             while(i.hasNext())
             {
-
                 Map.Entry me = (Map.Entry)i.next();
                 String name = (String)me.getKey();
-                //System.out.println("turn player = " + client.turnPlayer);
+                
+                //checks if it's the player's turn
                 if(client.turnPlayer.equals(name))
                 {
+                    
                     if(client.name.equals(name))
                     {
                         name = name + " (Your Turn)";
@@ -284,9 +307,7 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
                 g2d.drawString(name + " : " + score, x, y);
                 y += 20;
             }
-            
-            this.repaint();
-            this.revalidate();
+
             
         }catch(Exception er)
         {
@@ -294,50 +315,100 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         }
     }
     
-    
+    /**
+     * Deletes the previous line
+     */
     public static void undo()
     {
 
     }
     
-
+    /**
+     * repaints the screen
+     */
+    public void refreshScreen()
+    {
+        this.repaint();
+        this.revalidate();
+    }
+    
+    public void setBrushSize(int size)
+    {
+        stroke = new BasicStroke(size, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 0,
+        new float[] { 3, 1 }, 0);
+    }
     
     public void run() 
     {
         while(true)
         {
+            //client.name = client.turnPlayer;
+            /**
+             * If there are points to be sent to other clients then the message
+             * is broken up into three parts:
+             *  The first point
+             *  The multiple middle points
+             *  The last point
+             */
             try
             {
-                Iterator<List<Point>> lts = linesToSend.iterator();
+                //client.name = client.turnPlayer;
+                Iterator<Point[]> lts = linesToSend.iterator();
                 while(lts.hasNext())
                 {
-                    List<Point> line = lts.next();
-                    //Iterator<Point> pts = line.iterator();
-                    Object[] points = line.toArray();
+                    Point[] points = lts.next();
                     Point p = null;
                     
                     for(int i=0;i<points.length;i++)
                     {
-                        p = (Point)points[i];
+                        p = points[i];
                         if(p == null)
                             System.out.println("NULL AT POINT AT:"+i);
                         if(i==0)
-                            client.sendMessage("[OP_POINT_FIRST]" + p.x +","+ p.y + ","+"1" +","+ color);
-                        else if(i==points.length-1)
+                        {
+                            System.out.println("FIRST");
+                            if(p!= null)
+                                client.sendMessage("[OP_POINT_FIRST]" + p.x +","+ p.y + ","+brushSize +","+ color);
+                        }
+                        if(i==points.length-1)
                         {
                             System.out.println(p);
-                            client.sendMessage("[OP_POINT_LAST]" + p.x +","+ p.y);
+                            if(p!= null)
+                                client.sendMessage("[OP_POINT_LAST]" + p.x +","+ p.y);
                             
                         }
                         else
                         {
-                            client.sendMessage("[OP_POINT]" + p.x +","+ p.y);
+                            if(p!= null)
+                                client.sendMessage("[OP_POINT]" + p.x +","+ p.y);
                         }
                     }
-                    linesToSend.remove(line);
+                    linesToSend.remove(points);
                 }
                 
-                Thread.sleep(2);
+                Iterator<Point[]> lines = waitingLines.iterator();
+                while(lines.hasNext())
+                {
+                    Point[] dl = lines.next();
+                    sendLine(dl);
+                    waitingLines.remove(dl);
+                }
+                
+
+                if(!pointsToDrawLocally.isEmpty())
+                {
+                    refreshScreen();
+                }
+                else if(!pointsToDraw.isEmpty())
+                {
+                    refreshScreen();
+                }
+                if(isRefresh)
+                {
+                    refreshScreen();
+                    isRefresh = false;
+                }
+                //Thread.sleep(1);
             }catch(Exception er){er.printStackTrace();}
         }
     }
@@ -349,7 +420,6 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         try
         {
             ListIterator it = client.messages.listIterator();
-            String messages = "";
             while(it.hasNext())
             {
                 String nit = (String)it.next();
@@ -409,6 +479,9 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         
     }
     
+    /**
+     * Sends the chat message to the other clients
+     */
     public void sendMessage()
     {
         try
@@ -423,12 +496,11 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         }catch(Exception er){er.printStackTrace();}
     }
     
-
     public void mouseClicked(MouseEvent e) 
     {
         Point p = e.getPoint();
         
-        
+        shiny = shinyColor;
         if(chatSend.contains(p))
         {
             System.out.println("clicked");
@@ -437,92 +509,187 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         else if(redArea.contains(p))
         {
             color = "red";
+            shinyColorLoc = redArea;
+            
             //client.sendMessage("[OP_TOOL]" + "" +","+ "");
         }
         else if(yellowArea.contains(p))
         {
             color = "yellow";
+            shinyColorLoc = yellowArea;
         }
         else if(orangeArea.contains(p))
         {
             color = "orange";
+            shinyColorLoc = orangeArea;
         }
         else if(greenArea.contains(p))
         {
             color = "green";
+            shinyColorLoc = greenArea;
         }
         else if(blueArea.contains(p))
         {
             color = "blue";
+            shinyColorLoc = blueArea;
         }
         else if(pinkArea.contains(p))
         {
             color = "pink";
+            shinyColorLoc = pinkArea;
         }
         else if(blackArea.contains(p))
         {
             color = "black";
+            shinyColorLoc = blackArea;
         }
         else if(whiteArea.contains(p))
         {
             color = "white";
+            Rectangle rec = new Rectangle(whiteArea.x-6,whiteArea.y-6,whiteArea.width,whiteArea.height);
+            shinyColorLoc = rec;
+            
         }
         else if(undoArea.contains(p))
         {
             //client.sendMessage("[OP_TOOL]" + "undo");
         }
-        else if(restartArea.contains(p))
+        if(restartArea.contains(p))
         {
-            //client.sendMessage("[OP_TOOL]" + "restart");
+            if(client.name.equals(client.turnPlayer))
+                client.sendMessage("[OP_CLEAR]");
         }
+        
+        if(whiteArea.contains(p))
+        {
+            shiny = shinyErase;
+        }
+        
+        if(brush1Area.contains(p))
+        {
+            brushSize = "1";
+            shinyBrushLoc = brush1Area;
+            
+        }
+        else if(brush2Area.contains(p))
+        {
+            brushSize = "2";
+            shinyBrushLoc = brush2Area;
+        }
+        else if(brush3Area.contains(p))
+        {
+            brushSize = "3";
+            shinyBrushLoc = brush3Area;
+        }
+        else if(brush4Area.contains(p))
+        {
+            brushSize = "4";
+            shinyBrushLoc = brush4Area;
+        }
+        
         
     }
     
+    //Method which recieves a point from across the network and adds it into the
+    //array to be drawn
     public static void addLineToDraw(DrawLine points)
     {
         pointsToDraw.add(points);
         pointsToDrawLocally.clear();
+        
+
+        
     }
     
-    //Adds a new set of points to send which sits in an array until it's sent as a message
+    // Adds the line to local array if the user is drawing and sends it across 
+    // to the network to other users
+    public void sendLine(Point[] pointsToSend)
+    {
+
+        //checks to see if all the points are valid
+        Point[] points = pointsToSend;
+        for(int i=0;i<points.length;i++)
+        {
+            if(points[i] == null)
+                continue;
+            if(!drawingArea.contains(points[i]))
+            {
+                pointsToSend[i] = null;
+            }
+        }
+        if(client.name.equals(client.turnPlayer))
+        {
+            //Draws the points locally
+            Color color = DTClient.stringToColor(this.color);
+            this.addLineToDraw(new DrawLine(start,pointsToSend,end,color,Integer.parseInt(brushSize)));
+            
+            //Sends the points to other users
+            linesToSend.add(pointsToSend);
+            
+        }
+        
+        
+    }
+    
+    /** Adds a new set of points to send which sits in an array until it's sent as a message
+     * the array will be iterated over in the run() method.
+    **/
     public void addLineToSend()
     {
-        List<Point> pointsToSend = new CopyOnWriteArrayList<>();
-        pointsToSend.add(start);
-        pointsToSend.addAll(this.pointsToSend);
-        pointsToSend.add(end);
-        //pointsToSend.add(this.pointsToSend.get(this.pointsToSend.size()-2));
+        Point[] pointsToSend = new Point[this.pointsToSend.size()+2];
+        pointsToSend[0] = start;
+        pointsToSend[pointsToSend.length-1] = end;
+        for(int i=1;i<this.pointsToSend.size();i++)
+        {
+            pointsToSend[i] = this.pointsToSend.get(i);
+        }
         
-        
+        waitingLines.add(pointsToSend);
+        //The mouse points are cleared
+        this.pointsToSend.clear();
         start = null;
         end = null;
-        linesToSend.add(pointsToSend);
-        //System.out.println("Added Line");
-        pointsToSend = new CopyOnWriteArrayList<>();
-        this.pointsToSend = new CopyOnWriteArrayList<>();
         
+        
+    }
+    
+    /**
+     * This takes a point and draws it locally for this user so they can see
+     * what they are drawing. This point does not get sent to other users
+     * @param p to be drawn
+     */
+    public void addPoint(Point p)
+    {
+        if(drawingArea.contains(p))
+        {
+            pointsToDrawLocally.add(p);
+        }
     }
 
     public void mousePressed(MouseEvent e) 
     {
-        
-        if(start == null)
+        if(client.name.equals(client.turnPlayer))
         {
-            start = e.getPoint();
-            pointsToDrawLocally.add(e.getPoint());
+            if(start == null)
+            {
+                
+                start = e.getPoint();
+                addPoint(e.getPoint());
+            }
         }
         
     }
 
     public void mouseReleased(MouseEvent e) 
     {
-        if(true)
+        if(client.name.equals(client.turnPlayer))
         {
             if(end == null)
             {
                 end = e.getPoint();
-                pointsToDrawLocally.add(e.getPoint());
+                addPoint(e.getPoint());
                 addLineToSend();
+                
             }
         }
         //System.out.println("released at " + e.getX() + " " + e.getY());
@@ -535,14 +702,14 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
 
     public void mouseDragged(MouseEvent e) 
     {
-        //if(client.name.equals(client.turnPlayer))
-        if(true)
+        Point p = e.getPoint();
+        if(client.name.equals(client.turnPlayer))
         {
-            Point p = e.getPoint();
+            
             if(start != null && end == null)
             {
                 pointsToSend.add(p);
-                pointsToDrawLocally.add(p);
+                addPoint(p);
             }
         }
         
@@ -577,6 +744,12 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         //System.out.println(e.getKeyChar());
     }
     
+    /**
+     * Creates a folder called logs and for each instance of the program a new
+     * text file is created with the date and every error message is put to a new
+     * line.
+     * @param Error message to write to the log file
+     */
     public static void logMessage(String er)
     {
 

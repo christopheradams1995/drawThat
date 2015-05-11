@@ -51,10 +51,6 @@ public class DTServer implements Runnable
             {
                 //waits for someone to join the server
                 Socket server = serverSocket.accept();
-                System.out.println("server info : inetaddress" + server.getInetAddress());
-                System.out.println("server info : localaddress" + server.getLocalAddress());
-                System.out.println("server info : reuseaddress" + server.getReuseAddress());
-                System.out.println("server info : localsocketaddress" + server.getLocalSocketAddress());
 
                 out =
                         new DataOutputStream(server.getOutputStream());

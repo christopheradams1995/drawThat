@@ -78,9 +78,9 @@ public class DTChatServer implements Runnable
     public void loadPacks(boolean easy, boolean med , boolean hard)
     {
         Scanner scan = null;
-        File easyFile = new File("easyWords.txt");
-        File medFile = new File("mediumWords.txt");
-        File hardFile = new File("hardWords.txt");
+        File easyFile = new File("words/easyWords.txt");
+        File medFile = new File("words/mediumWords.txt");
+        File hardFile = new File("words/hardWords.txt");
         
         try
         {
