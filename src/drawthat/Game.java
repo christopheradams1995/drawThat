@@ -64,6 +64,7 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
     private static final Rectangle whiteArea = new Rectangle(15, 547, 45,43);
     private static final Rectangle undoArea = new Rectangle(19, 65, 68,36);
     private static final Rectangle restartArea = new Rectangle(14, 61, 80,42);
+    private static final Rectangle skipArea = new Rectangle(479, 58, 89,45);
     private static final Rectangle brush1Area = new Rectangle(131, 533, 168,9);
     private static final Rectangle brush2Area = new Rectangle(131, 548, 171,13);
     private static final Rectangle brush3Area = new Rectangle(132, 565, 169,11);
@@ -338,6 +339,11 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         new float[] { 3, 1 }, 0);
     }
     
+    public void skipTurn()
+    {
+        client.sendMessage("[OP_SKIP]");
+    }
+    
     public void run() 
     {
         while(true)
@@ -558,6 +564,14 @@ public class Game extends JComponent implements Runnable, MouseListener, MouseMo
         {
             if(client.name.equals(client.turnPlayer))
                 client.sendMessage("[OP_CLEAR]");
+        }
+        if(skipArea.contains(p))
+        {
+            if(client.name.equals(client.turnPlayer))
+            {
+                this.skipTurn();
+                client.sendMessage("[OP_CLEAR]");
+            }
         }
         
         if(whiteArea.contains(p))

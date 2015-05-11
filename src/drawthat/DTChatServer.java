@@ -229,6 +229,7 @@ public class DTChatServer implements Runnable
                             message = "[OP_PlayerMessage]"+(numPlayers+1) + ",newName,"+name;
                             numPlayers++;
                         }
+                        // checks if the player correctly guessed the word
                         if(Op.equals("[OP_MESSAGE]"))//chat message
                         {
                             String text = message.substring(index+1).toLowerCase();
@@ -245,6 +246,12 @@ public class DTChatServer implements Runnable
                                 
                             }
                         }
+                        //skips the current word and gives the next
+                        if(Op.equals("[OP_SKIP]"))
+                        {
+                            nextWord = ran.nextInt(words.size());
+                        }
+                        
                     }
                     
 
