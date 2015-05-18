@@ -1,12 +1,12 @@
 /**
- * JoinMenu
- * 
- * v1.0
- * 
- * 15/05/2015
- * 
- * This file is owned by Christopher Adams
- */
+* This is a reaction based game. When you click a shape the shape reactions which
+* affect shapes around it. The point of the game is to react every shape and you
+* gain points the better you do.
+*
+* @author  Christopher Adams
+* @version 1.0
+* @since   2014-11-23
+*/
 
 package drawthat;
 
@@ -21,27 +21,31 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileWriter;
 import java.net.URL;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-// This menu asks the user to input their name and the server information to join.
-public class JoinMenu extends JComponent implements Runnable, MouseListener, MouseMotionListener {
-    //Rectangles for navigation
-    private static final Rectangle recBack= new Rectangle(25,480,316,95)
-            ,recNext = new Rectangle(460, 480,316,95);
-    
-    //Texts for the server information and name
-    private static final JTextField ipTf = new JTextField("192.168.0.15",20);
-    private static final JTextField nameTf = new JTextField("",20);
-    private static final JTextField portTf = new JTextField("7777",20);
-    private static final JLabel ipLabel = new JLabel("Enter the IP Address:");
-    private static final JLabel errorLabel = new JLabel("");
-    private static final JLabel portLabel = new JLabel("Enter the port:");
-    private static final JLabel nameLabel = new JLabel("Enter your name:");
+public class JoinMenu extends JComponent implements Runnable,MouseListener, MouseMotionListener
+{
+    // used for the button events including the movement of the arrow
     Font labelFont = new Font("Calibri", Font.PLAIN, 24);
+    private static Rectangle recBack= new Rectangle(25,480,316,95)
+            ,recNext = new Rectangle(460, 480,316,95);
+    private static JTextField ipTf = new JTextField("192.168.0.15",20);
+    private static JTextField nameTf = new JTextField("",20);
+    private static JTextField portTf = new JTextField("7777",20);
+    private static JLabel ipLabel = new JLabel("Enter the IP Address:");
+    private static JLabel errorLabel = new JLabel("");
+    private static JLabel portLabel = new JLabel("Enter the port:");
+    private static JLabel nameLabel = new JLabel("Enter your name:");
+    private Point p;
+    private String ip = "";
+    private String port = "";
+    
     
     BufferedImage back;
     BufferedImage button;
@@ -50,13 +54,15 @@ public class JoinMenu extends JComponent implements Runnable, MouseListener, Mou
     
     public boolean isConnecting = false;
     
-    // Adds the textfields , labels, listeners to the frame and loads the images
     JoinMenu()
     {
+        this.addMouseListener(this);
+        this.addMouseMotionListener(this);
+        
         //Load Images
-        back = DrawThat.getImage("images/MainBack.png");
-        button = DrawThat.getImage("images/MainmenuButton.png");
-        arrow = DrawThat.getImage("images/arrow.png");
+        back = getImage("images/MainBack.png");
+        button = getImage("images/MainmenuButton.png");
+        arrow = getImage("images/arrow.png");
         
         //Add text fields and stuff for information input
         ipTf.setBounds(375, 155, 200, 25);
@@ -78,62 +84,62 @@ public class JoinMenu extends JComponent implements Runnable, MouseListener, Mou
         this.add(nameLabel);
         this.add(errorLabel);
         
-        addMouseListener(this);
-        addMouseMotionListener(this);
-    }
-    
-    public void startThread() {
         Thread t = new Thread(this);
         t.start();
     }
     
-    //Connects to the client and starts the game if the connection is sucessful.
-    //otherwise the error is written to a log file.
-    @Override
-    public void run() {
-        while(true) {
-            try {
+    public void run()
+    {
+
+        //Connects to the client and starts the game if the connection is sucessful.
+        // otherwise the error is written to a log file.
+        while(true)
+        {
+            try
+            {
                 this.repaint();
                 this.revalidate();
                 
-                if(isConnecting) {
-                    try {
+                if(isConnecting)
+                {
+                    try
+                    {
                         DTClient client = new DTClient(ipTf.getText(), Integer.parseInt(portTf.getText()));
                         Game game = new Game(client, nameTf.getText());
                         DrawThat.setDisplay(game);
                     }
-                    catch(Exception er) {
+                    catch(Exception er)
+                    {
                         er.printStackTrace();
-                        DrawThat.logMessage(er.getMessage());
+                        Game.logMessage(er.getMessage());
                         errorLabel.setText("Error connecting to the server");
                     }
                     isConnecting = false;
                 }
                 Thread.sleep(1000);
             }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-            }
-            catch(Exception er) {
+            catch(Exception er)
+            {
                 er.printStackTrace();
-                DrawThat.logMessage(er.getMessage());
-                
-            }
-            finally {
-                isConnecting = false;
+                Game.logMessage(er.getMessage());
             }
         }
     }
     
-    public void paintComponent(Graphics g) {
+    public void paintComponent(Graphics g) 
+    {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         
-        try {
+        try
+        {
+            
+            //Draw Images
             g2d.drawImage(back, 0, 0, null);
+            //g2d.drawImage(button, 230, 210, null);
             g2d.drawImage(button,25, 480, null);
             g2d.drawImage(button, 460, 480, null);
+            //g2d.drawImage(title, 150, 0, null);
             
             //Add Text for buttons
             Font font = new Font("Serif", Font.PLAIN, 55);
@@ -150,35 +156,65 @@ public class JoinMenu extends JComponent implements Runnable, MouseListener, Mou
             this.repaint();
             this.revalidate();
             
-        }
-        catch(Exception er) {
+        }catch(Exception er)
+        {
             System.out.println("ERROR");
-            DrawThat.logMessage(er.getMessage());
+            Game.logMessage(er.getMessage());
         }
     }
     
-    // Checks if the buttons are clicked. If the next button is clicked
-    // there is input validation then a isConnecting variable is set to 
-    // true for the run method.
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        Point p = e.getPoint();
-        
-        if(recBack.contains(p)) {
-            DrawThat.setDisplay(DrawThat.MAIN_MENU);
+    /**
+     * Accepts the location of an image then returns the bufferedImage version
+     * of it.
+     * @param url : the location of the file
+     * @return BufferedImage of the file from the location
+     */
+    public BufferedImage getImage(String s)
+    {
+        try
+        {
+            //uses the classLoader to get the path where the classes are
+            URL url = MainMenu.class.getResource(s);
+            
+            BufferedImage in = ImageIO.read(url);
+            return in;
+        }
+        catch(Exception er)
+        {
+            er.printStackTrace();
+            Game.logMessage(er.getMessage());
+            return null;
         }
         
-        if(recNext.contains(p)) {
-            if(ipTf.getText().equals("")  && portTf.getText().equals("")) {
+    }
+    
+
+    public void mouseClicked(MouseEvent e) 
+    {
+        Point p = e.getPoint();
+        
+        if(recBack.contains(p))
+        {
+            DrawThat.setDisplay(DrawThat.mm);
+        }
+        
+        
+        if(recNext.contains(p))
+        {
+            if(ipTf.getText().equals("")  && portTf.getText().equals(""))
+            {
                 errorLabel.setText("Please Enter the IP Address and port");
             }
-            else if(ipTf.getText().equals("")) {
+            else if(ipTf.getText().equals(""))
+            {
                 errorLabel.setText("Please Enter the IP Address");
             }
-            else if(portTf.getText().equals("")) {
+            else if(portTf.getText().equals(""))
+            {
                 errorLabel.setText("Please Enter the port");
             }
-            else {
+            else
+            {
                 //Connects in the run method so the application doesn't freeze.
                 isConnecting = true;
                 errorLabel.setText("Connecting...Please wait");
@@ -186,27 +222,44 @@ public class JoinMenu extends JComponent implements Runnable, MouseListener, Mou
         }
     }
 
-    public void mousePressed(MouseEvent e) {
-        // Not used
+    public void mousePressed(MouseEvent e) 
+    {
+        
     }
 
-    public void mouseReleased(MouseEvent e) {
-        // Not used
+    public void mouseReleased(MouseEvent e) 
+    {
+        
     }
 
-    public void mouseEntered(MouseEvent e) {
-       // Not used
+    public void mouseEntered(MouseEvent e) 
+    {
+       
     }
 
-    public void mouseExited(MouseEvent e) {
-        // Not used
+    public void mouseExited(MouseEvent e) 
+    {
+        
     }
 
-    public void mouseDragged(MouseEvent e) {
-        // Not used
+    public void mouseDragged(MouseEvent e) 
+    {
+        
     }
     
-    public void mouseMoved(MouseEvent e) {
-        // Not used
+    //Adjusts the location of the arrow that appears after the user hovers over
+    // each button.
+    public void mouseMoved(MouseEvent e) 
+    {
+        Point p = e.getPoint();
+        if(recNext.contains(p))
+        {
+            this.p = new Point((int)recNext.getX()-110, (int)recNext.getY()+10);
+        }
+        else if(recBack.contains(p))
+        {
+            this.p = new Point((int)recBack.getX()-110, (int)recBack.getY()+10);
+        }
+        
     }
 }
