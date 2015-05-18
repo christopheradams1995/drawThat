@@ -1,19 +1,27 @@
+/**
+ * DrawLine
+ * 
+ * v1.0
+ * 
+ * 15/05/2015
+ * 
+ * This file is owned by Christopher Adams
+ */
 
 package drawthat;
 
 import java.awt.Color;
 import java.awt.Point;
 
-public class DrawLine 
-{
-    private Point start;
+//Holds the information for a line for drawing
+public class DrawLine {
+    private final Point start;
     private Point[] mid;
     private Point end;
-    private Color color;
-    private int size;
+    private final Color color;
+    private final int size;
     
-    DrawLine(Point start, Point[] mid, Point end, Color color, int size)
-    {
+    DrawLine(Point start, Point[] mid, Point end, Color color, int size) {
         this.start = start;
         this.mid = mid;
         this.end = end;
@@ -21,49 +29,37 @@ public class DrawLine
         this.size = size;
     }
     
-    DrawLine(Point start, Color color, int size)
-    {
+    DrawLine(Point start, Color color, int size) {
         this.start = start;
         this.color = color;
         this.size = size;
     }
     
-    public Point[] getPoints()
-    {
+    public Point[] getPoints() {
         return mid;
     }
     
-    public Color getColor()
-    {
+    public Color getColor() {
         return color;
     }
     
-    public int getSize()
-    {
+    public int getSize() {
         return size;
     }
     
-    public void setEnd(Point p)
-    {
+    public void setEnd(Point p) {
         this.end = p;
     }
     
-    //arrayindex out of bounds , having trouble drawing , every line is leading to an inital point
-    public void setMid(Point[] p)
-    {
+    
+    public void setMid(Point[] p) {
         mid = new Point[p.length+2];
         
         int midI = 1;
-        for(int i=0;i<p.length;i++)
-        {
-                
-            mid[midI++] = p[i];
-            //System.out.println(p[i]);
+        for (Point p1 : p) {
+            mid[midI++] = p1;
         }
         mid[0] = start;
-        mid[mid.length-1] = end;
-        //System.out.println("start send =" + start);
-                
-        
+        mid[mid.length-1] = end;   
     }
 }

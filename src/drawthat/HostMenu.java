@@ -1,12 +1,12 @@
 /**
-* This is a reaction based game. When you click a shape the shape reactions which
-* affect shapes around it. The point of the game is to react every shape and you
-* gain points the better you do.
-*
-* @author  Christopher Adams
-* @version 1.0
-* @since   2014-11-23
-*/
+ * HostMenu
+ * 
+ * v1.0
+ * 
+ * 15/05/2015
+ * 
+ * This file is owned by Christopher Adams
+ */
 
 package drawthat;
 
@@ -21,7 +21,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import javax.imageio.ImageIO;
@@ -31,48 +30,37 @@ import javax.swing.JLabel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 
-public class HostMenu extends JComponent implements MouseListener, MouseMotionListener
-{
-    //navigation
-    private static Rectangle recBack= new Rectangle(25,480,316,95)
+// This menu asks the user to input their name and server information to host.
+public class HostMenu extends JComponent implements MouseListener, MouseMotionListener {
+    //Rectangles for navigation
+    private static final Rectangle recBack= new Rectangle(25,480,316,95)
             ,recNext = new Rectangle(460, 480,316,95);
     
-    //connecting inputs
+    //Texts for the server information and name
+    private static final JTextField nameTf = new JTextField("",20);
+    private static final JTextField portTf = new JTextField("7777",20);
+    public static final JLabel errorLabel = new JLabel("");
+    private static final JLabel nameLabel = new JLabel("Enter your name:");
+    private static final JLabel portLabel = new JLabel("Enter the port:");
     Font labelFont = new Font("Calibri", Font.PLAIN, 24);
-    private static JTextField nameTf = new JTextField("",20);
-    private static JTextField portTf = new JTextField("7777",20);
-    private static JLabel errorLabel = new JLabel("");
-    private static JLabel nameLabel = new JLabel("Enter your name:");
-    private static JLabel portLabel = new JLabel("Enter the port:");
     
-    //settings
+    //Settings input
     static JCheckBox easyPack = new JCheckBox();
     static JCheckBox mediumPack = new JCheckBox();
     static JCheckBox hardPack = new JCheckBox();
     JSlider slider = new JSlider(JSlider.HORIZONTAL, 2, 8, 4);  
-    
-    
-    private Point p;
-    private String ip = "";
-    private String port = "";
-    static MainMenu mm = new MainMenu();
     
     BufferedImage back;
     BufferedImage button;
     BufferedImage title;
     BufferedImage arrow;        
     
-    HostMenu()
-    {
-        this.addMouseListener(this);
-        this.addMouseMotionListener(this);
-        
+    // Adds the textfields , labels, listeners to the frame and loads the images
+    HostMenu() {
         //Load Images
-        back = getImage("images/HostBack.png");
-        button = getImage("images/MainmenuButton.png");
-        arrow = getImage("images/arrow.png");
-        
-        //Add text fields and stuff for information input
+        back = DrawThat.getImage("images/HostBack.png");
+        button = DrawThat.getImage("images/MainmenuButton.png");
+        arrow = DrawThat.getImage("images/arrow.png");
         
         errorLabel.setBounds(155, 105, 285, 25);
         nameTf.setBounds(255, 135, 100, 25);
@@ -104,28 +92,26 @@ public class HostMenu extends JComponent implements MouseListener, MouseMotionLi
         this.add(nameLabel);
         this.add(portLabel);
         this.add(errorLabel);
+        
+        this.addMouseListener(this);
+        this.addMouseMotionListener(this);
     }
     
-    public void paintComponent(Graphics g) 
-    {
+    @Override
+    public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        try
-        {
-            
+        try {
             //Draw Images
             g2d.drawImage(back, 0, 0, null);
-            //g2d.drawImage(button, 230, 210, null);
             g2d.drawImage(button,25, 480, null);
             g2d.drawImage(button, 460, 480, null);
-            //g2d.drawImage(title, 150, 0, null);
             
             //Add Text for buttons
             Font font = new Font("Serif", Font.PLAIN, 55);
             g2d.setFont(font);
             g2d.setColor(Color.white);
             
-            //anti alias
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             
@@ -135,116 +121,71 @@ public class HostMenu extends JComponent implements MouseListener, MouseMotionLi
             this.repaint();
             this.revalidate();
             
-        }catch(Exception er){System.out.println("ERROR");}
+        }
+        catch(Exception er) {
+            DrawThat.logMessage(er.getMessage());
+            System.out.println(er.getMessage());
+        }
     }
     
-    /**
-     * Accepts the location of an image then returns the bufferedImage version
-     * of it.
-     * @param url : the location of the file
-     * @return BufferedImage of the file from the location
-     */
-    public BufferedImage getImage(String s)
-    {
-        try
-        {
-            //uses the classLoader to get the path where the classes are
-            URL url = MainMenu.class.getResource(s);
-            
-            BufferedImage in = ImageIO.read(url);
-            return in;
-        }
-        catch(Exception er)
-        {
-            er.printStackTrace();
-            return null;
-        }
-        
-    }
-    
-
-    public void mouseClicked(MouseEvent e) 
-    {
+    // Checks if the buttons are clicked. If the next button is clicked
+    // there is input validation then a new server , client and game is
+    // created.
+    @Override
+    public void mouseClicked(MouseEvent e) {
         Point p = e.getPoint();
         
-        if(recBack.contains(p))
-        {
-            
-            DrawThat.setDisplay(mm);
+        if(recBack.contains(p)) {
+            DrawThat.setDisplay(DrawThat.MAIN_MENU);
         }
         
-        if(recNext.contains(p))
-        {
-            if(portTf.getText().equals(""))
-            {
+        if(recNext.contains(p)) {
+            if(portTf.getText().equals("")) {
                 errorLabel.setText("Please Enter the port");
             }
-            else
-            {
-                try
-                {
-                    if(!easyPack.isSelected() && !mediumPack.isSelected() && !hardPack.isSelected())
-                    {
+            else {
+                try {
+                    if(!easyPack.isSelected() && !mediumPack.isSelected() && !hardPack.isSelected()) {
                         errorLabel.setText("Please select atleast one word pack");
                     }
-                    else
-                    {
-                            
+                    else {  
                         DTServer server = new DTServer(Integer.parseInt(portTf.getText()), easyPack.isSelected() , this.mediumPack.isSelected(), this.hardPack.isSelected(),slider.getValue());
+                        server.startThread();
                         DTClient client = new DTClient(InetAddress.getLocalHost().getHostAddress(), Integer.parseInt(portTf.getText()));
                         Game game = new Game(client, nameTf.getText());
                         DrawThat.setDisplay(game);
                         errorLabel.setText("Server is running!");
                     }
                 }
-                catch(Exception er)
-                {
+                catch(Exception er) {
                     er.printStackTrace();
-                    Game.logMessage(er.getMessage());
+                    DrawThat.logMessage(er.getMessage());
                 }
-                //DrawThat.setDisplay("mainMenu");
             }
         }
     }
 
-    public void mousePressed(MouseEvent e) 
-    {
-        
+    public void mousePressed(MouseEvent e) {
+        // Not used
     }
 
-    public void mouseReleased(MouseEvent e) 
-    {
-        
+    public void mouseReleased(MouseEvent e) {
+        // Not used
     }
 
-    public void mouseEntered(MouseEvent e) 
-    {
-       
+    public void mouseEntered(MouseEvent e) {
+       // Not used
     }
 
-    public void mouseExited(MouseEvent e) 
-    {
-        
+    public void mouseExited(MouseEvent e) {
+        // Not used
     }
 
-    public void mouseDragged(MouseEvent e) 
-    {
-        
+    public void mouseDragged(MouseEvent e) {
+        // Not used
     }
     
-    //Adjusts the location of the arrow that appears after the user hovers over
-    // each button.
-    public void mouseMoved(MouseEvent e) 
-    {
-        Point p = e.getPoint();
-        if(recNext.contains(p))
-        {
-            this.p = new Point((int)recNext.getX()-110, (int)recNext.getY()+10);
-        }
-        else if(recBack.contains(p))
-        {
-            this.p = new Point((int)recBack.getX()-110, (int)recBack.getY()+10);
-        }
-        
+    public void mouseMoved(MouseEvent e) {
+        // Not used
     }
 }
