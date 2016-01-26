@@ -114,14 +114,13 @@ public class JoinMenu extends JComponent implements Runnable, MouseListener, Mou
             catch (InterruptedException e) {
                 e.printStackTrace();
                 Thread.currentThread().interrupt();
+				isConnecting = false;
             }
             catch(Exception er) {
                 er.printStackTrace();
                 DrawThat.logMessage(er.getMessage());
+				isConnecting = false;
                 
-            }
-            finally {
-                isConnecting = false;
             }
         }
     }
